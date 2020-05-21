@@ -20,6 +20,7 @@ type Params struct {
 	BufferCnt int
 	BufferWrn int
 	Url       string
+	App       string
 	Test      bool
 }
 
@@ -34,6 +35,7 @@ var (
 		BufferCnt: 100,
 		BufferWrn: 50,
 		Url:       "127.0.0.1",
+		App:       "default",
 	}
 	q = Queue{
 		values: make(map[string]float64, 0),
@@ -78,7 +80,7 @@ func Init(pp Params) {
 				if err != nil {
 					panic(err)
 				}
-				for k, _ := range q.values {
+				for k := range q.values {
 					delete(q.values, k)
 				}
 			}()
@@ -125,7 +127,7 @@ func sendOne(key string, value float64) error {
 }
 
 func send(data []byte) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/metrics/job/pushgateway", p.Url), bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/metrics/job/%s", p.Url, p.App), bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
