@@ -70,15 +70,15 @@ func Init(pp Params) {
 				if len(q.values) > p.BufferWrn {
 					log.Printf("cnt message in metric stack is too big %d", len(q.values))
 				}
+				var s string
 				for k, v := range q.values {
-					if p.Test {
-						log.Printf("message sent (fake) %s %f", k, v)
-					} else {
-						err = send(k, v)
-						if err != nil {
-							panic(err)
-						}
-					}
+					s += fmt.Sprintf("%s %f\n", k, v)
+				}
+				err = sendMany(s)
+				if err != nil {
+					panic(err)
+				}
+				for k, _ := range q.values {
 					delete(q.values, k)
 				}
 			}()
@@ -114,8 +114,17 @@ func put(key string, value float64) {
 	q.values[key] = value
 }
 
-func send(key string, value float64) error {
+func sendMany(plain string) error {
+	data := []byte(plain)
+	return send(data)
+}
+
+func sendOne(key string, value float64) error {
 	data := []byte(fmt.Sprintf("%s %f\n", key, value))
+	return send(data)
+}
+
+func send(data []byte) error {
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/metrics/job/pushgateway", p.Url), bytes.NewBuffer(data))
 	if err != nil {
 		return err
