@@ -74,7 +74,7 @@ func Init(pp Params) {
 				}
 				var s string
 				for k, v := range q.values {
-					s += fmt.Sprintf("%s %f\n", k, v)
+					s += fmt.Sprintf("%s_%s %f\n", p.App, k, v)
 				}
 				err = sendMany(s)
 				if err != nil {
