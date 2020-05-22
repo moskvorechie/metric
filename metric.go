@@ -102,7 +102,7 @@ func (m *Metric) Stop() {
 	put(m.name+"_seconds", m.timeDur.Seconds())
 }
 
-func (m *Metric) Records(value int) {
+func (m *Metric) Records(value int64) {
 	put(m.name+"_records", float64(value))
 }
 
