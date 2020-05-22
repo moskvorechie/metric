@@ -102,8 +102,8 @@ func (m *Metric) Stop() {
 	put(m.name+"_seconds", m.timeDur.Seconds())
 }
 
-func (m *Metric) Records(value float64) {
-	put(m.name+"_records", value)
+func (m *Metric) Records(value int) {
+	put(m.name+"_records", float64(value))
 }
 
 func (m *Metric) SubMetric(key string, value float64) {
