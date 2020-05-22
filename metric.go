@@ -17,37 +17,38 @@ type Metric struct {
 
 type Params struct {
 	Sleep     int
-	BufferCnt int
 	BufferWrn int
 	Url       string
 	App       string
 	Test      bool
+	isInit    bool
 }
 
-type Queue struct {
+type rec struct {
+	name  string
+	value float64
+}
+
+type queue struct {
 	sync.RWMutex
-	values map[string]float64
+	values []rec
 }
 
 var (
 	p = Params{
 		Sleep:     5,
-		BufferCnt: 100,
 		BufferWrn: 50,
 		Url:       "127.0.0.1",
 		App:       "default",
 	}
-	q = Queue{
-		values: make(map[string]float64, 0),
+	q = queue{
+		values: make([]rec, 0),
 	}
 )
 
 func Init(pp Params) {
 
 	// Init params
-	if pp.BufferCnt > 0 {
-		p.BufferCnt = pp.BufferCnt
-	}
 	if pp.BufferWrn > 0 {
 		p.BufferWrn = pp.BufferWrn
 	}
@@ -57,8 +58,11 @@ func Init(pp Params) {
 	if pp.Sleep <= 0 {
 		p.Sleep = pp.Sleep
 	}
-	q = Queue{
-		values: make(map[string]float64, pp.BufferCnt),
+	if pp.App != "default" {
+		p.App = pp.App
+	}
+	q = queue{
+		values: make([]rec, 0),
 	}
 
 	// Send queue
@@ -70,25 +74,28 @@ func Init(pp Params) {
 				q.Lock()
 				defer q.Unlock()
 				if len(q.values) > p.BufferWrn {
-					log.Printf("cnt message in metric stack is too big %d", len(q.values))
+					log.Printf("cnt message in Metric stack is too big %d", len(q.values))
 				}
 				var s string
-				for k, v := range q.values {
-					s += fmt.Sprintf("%s_%s %f\n", p.App, k, v)
+				for _, r := range q.values {
+					s += fmt.Sprintf("%s_%s %f\n", p.App, r.name, r.value)
 				}
 				err = sendMany(s)
 				if err != nil {
 					panic(err)
 				}
-				for k := range q.values {
-					delete(q.values, k)
-				}
+				q.values = nil
 			}()
 		}
 	}()
+
+	p.isInit = true
 }
 
 func Start(name string) Metric {
+	if !p.isInit {
+		panic("Metric is not init")
+	}
 	m := Metric{
 		name:      name,
 		timeStart: time.Now(),
@@ -99,21 +106,30 @@ func Start(name string) Metric {
 
 func (m *Metric) Stop() {
 	m.timeDur = time.Now().Sub(m.timeStart)
-	put(m.name+"_seconds", m.timeDur.Seconds())
+	put(rec{
+		name:  m.name + "_seconds",
+		value: m.timeDur.Seconds(),
+	})
 }
 
 func (m *Metric) Records(value int64) {
-	put(m.name+"_records", float64(value))
+	put(rec{
+		name:  m.name + "_records",
+		value: float64(value),
+	})
 }
 
 func (m *Metric) SubMetric(key string, value float64) {
-	put(m.name+"_"+key, value)
+	put(rec{
+		name:  m.name + "_" + key,
+		value: value,
+	})
 }
 
-func put(key string, value float64) {
+func put(r rec) {
 	q.Lock()
 	defer q.Unlock()
-	q.values[key] = value
+	q.values = append(q.values, r)
 }
 
 func sendMany(plain string) error {
