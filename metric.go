@@ -62,6 +62,7 @@ func Init(pp Params) {
 	if pp.App != "default" {
 		p.App = pp.App
 	}
+	p.Test = pp.Test
 	q = queue{
 		values: make([]rec, 0),
 	}
@@ -113,31 +114,19 @@ func (m *Metric) Stop() {
 	})
 }
 
+// Save records count
 func (m *Metric) Records(value interface{}) {
-	var res float64
-	switch value.(type) {
-	case int:
-		res = float64(value.(int))
-	case int64:
-		res = float64(value.(int64))
-	case string:
-		i, err := strconv.Atoi(value.(string))
-		if err != nil {
-			panic(err)
-		}
-		res = float64(i)
-	}
-
 	put(rec{
 		name:  m.name + "_records",
-		value: res,
+		value: toFloat(value),
 	})
 }
 
-func (m *Metric) SubMetric(key string, value float64) {
+// Additional metric with same app and name
+func (m *Metric) SubMetric(key string, value interface{}) {
 	put(rec{
 		name:  m.name + "_" + key,
-		value: value,
+		value: toFloat(value),
 	})
 }
 
@@ -158,6 +147,9 @@ func sendOne(key string, value float64) error {
 }
 
 func send(data []byte) error {
+	if p.Test {
+		return nil
+	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/metrics/job/%s", p.Url, p.App), bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -170,4 +162,27 @@ func send(data []byte) error {
 	}
 	defer resp.Body.Close()
 	return nil
+}
+
+func toFloat(value interface{}) float64 {
+	var res float64
+	switch value.(type) {
+	case int:
+		res = float64(value.(int))
+	case int32:
+		res = float64(value.(int32))
+	case int64:
+		res = float64(value.(int64))
+	case float32:
+		res = float64(value.(float32))
+	case float64:
+		res = value.(float64)
+	case string:
+		i, _ := strconv.Atoi(value.(string))
+		res = float64(i)
+	default:
+		panic("This type not supported")
+	}
+
+	return res
 }

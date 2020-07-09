@@ -10,7 +10,7 @@ func init() {
 		BufferWrn: 50,
 		Sleep:     1,
 		Url:       "http://127.0.0.1",
-		Test:      false,
+		Test:      true,
 		App:       "test",
 	})
 }
