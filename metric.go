@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -112,10 +113,24 @@ func (m *Metric) Stop() {
 	})
 }
 
-func (m *Metric) Records(value int64) {
+func (m *Metric) Records(value interface{}) {
+	var res float64
+	switch value.(type) {
+	case int:
+		res = float64(value.(int))
+	case int64:
+		res = float64(value.(int64))
+	case string:
+		i, err := strconv.Atoi(value.(string))
+		if err != nil {
+			panic(err)
+		}
+		res = float64(i)
+	}
+
 	put(rec{
 		name:  m.name + "_records",
-		value: float64(value),
+		value: res,
 	})
 }
 
