@@ -11,6 +11,7 @@ import (
 )
 
 type Metric struct {
+	stated    bool
 	name      string
 	timeStart time.Time
 	timeDur   time.Duration
@@ -21,6 +22,7 @@ type Params struct {
 	BufferWrn int
 	Url       string
 	App       string
+	Instance  string
 	Test      bool
 	isInit    bool
 }
@@ -62,6 +64,9 @@ func Init(pp Params) {
 	if pp.App != "default" {
 		p.App = pp.App
 	}
+	if pp.Instance != "default" {
+		p.Instance = pp.Instance
+	}
 	p.Test = pp.Test
 	q = queue{
 		values: make([]rec, 0),
@@ -99,6 +104,7 @@ func Start(name string) Metric {
 		panic("Metric is not init")
 	}
 	m := Metric{
+		stated:    true,
 		name:      name,
 		timeStart: time.Now(),
 	}
@@ -107,6 +113,9 @@ func Start(name string) Metric {
 }
 
 func (m *Metric) Stop() {
+	if !m.stated {
+		return
+	}
 	m.timeDur = time.Now().Sub(m.timeStart)
 	put(rec{
 		name:  m.name + "_seconds",
@@ -116,6 +125,9 @@ func (m *Metric) Stop() {
 
 // Save records count
 func (m *Metric) Records(value interface{}) {
+	if !m.stated {
+		return
+	}
 	put(rec{
 		name:  m.name + "_records",
 		value: toFloat(value),
@@ -124,6 +136,9 @@ func (m *Metric) Records(value interface{}) {
 
 // Additional metric with same app and name
 func (m *Metric) SubMetric(key string, value interface{}) {
+	if !m.stated {
+		return
+	}
 	put(rec{
 		name:  m.name + "_" + key,
 		value: toFloat(value),
@@ -150,7 +165,14 @@ func send(data []byte) error {
 	if p.Test {
 		return nil
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/metrics/job/%s", p.Url, p.App), bytes.NewBuffer(data))
+
+	uri := fmt.Sprintf("%s/metrics/job/%s", p.Url, p.App)
+	if p.Instance != "" {
+		uri = fmt.Sprintf("%s/metrics/job/%s/instance/%s", p.Url, p.App, p.Instance)
+	}
+	fmt.Println(string(data))
+
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
