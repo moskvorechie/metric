@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -92,6 +93,7 @@ func Init(pp Params) {
 				for _, r := range q.values {
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
 				}
+				s = strings.TrimSpace(s)
 				if len(s) <= 0 {
 					return
 				}
