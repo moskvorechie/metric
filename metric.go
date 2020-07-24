@@ -24,6 +24,7 @@ type Params struct {
 	App       string
 	Instance  string
 	Test      bool
+	Debug     bool
 	isInit    bool
 }
 
@@ -68,6 +69,7 @@ func Init(pp Params) {
 		p.Instance = pp.Instance
 	}
 	p.Test = pp.Test
+	p.Debug = pp.Debug
 	q = queue{
 		values: make([]rec, 0),
 	}
@@ -80,12 +82,18 @@ func Init(pp Params) {
 			func() {
 				q.Lock()
 				defer q.Unlock()
-				if len(q.values) > p.BufferWrn {
+				if len(q.values) <= 0 {
+					return
+				}
+				if p.Debug && len(q.values) > p.BufferWrn {
 					log.Printf("cnt message in Metric stack is too big %d", len(q.values))
 				}
 				var s string
 				for _, r := range q.values {
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
+				}
+				if len(s) <= 0 {
+					return
 				}
 				err = sendMany(s)
 				if err != nil {
@@ -170,12 +178,17 @@ func send(data []byte) error {
 	if p.Test {
 		return nil
 	}
+	if len(data) <= 0 {
+		return nil
+	}
 
 	uri := fmt.Sprintf("%s/metrics/job/%s", p.Url, p.App)
 	if p.Instance != "" {
 		uri = fmt.Sprintf("%s/metrics/job/%s/instance/%s", p.Url, p.App, p.Instance)
 	}
-	fmt.Println(string(data))
+	if p.Debug {
+		fmt.Println(uri, string(data))
+	}
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(data))
 	if err != nil {
@@ -188,6 +201,9 @@ func send(data []byte) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if p.Debug {
+		fmt.Println(resp.StatusCode)
+	}
 	return nil
 }
 
