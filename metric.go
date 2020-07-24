@@ -28,8 +28,8 @@ type Params struct {
 }
 
 type rec struct {
-	name  string
-	value float64
+	Name  string
+	Value float64
 }
 
 type queue struct {
@@ -85,7 +85,7 @@ func Init(pp Params) {
 				}
 				var s string
 				for _, r := range q.values {
-					s += fmt.Sprintf("%s_%s %f\n", p.App, r.name, r.value)
+					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
 				}
 				err = sendMany(s)
 				if err != nil {
@@ -118,8 +118,8 @@ func (m *Metric) Stop() {
 	}
 	m.timeDur = time.Now().Sub(m.timeStart)
 	put(rec{
-		name:  m.name + "_seconds",
-		value: m.timeDur.Seconds(),
+		Name:  m.name + "_seconds",
+		Value: m.timeDur.Seconds(),
 	})
 }
 
@@ -129,19 +129,24 @@ func (m *Metric) Records(value interface{}) {
 		return
 	}
 	put(rec{
-		name:  m.name + "_records",
-		value: toFloat(value),
+		Name:  m.name + "_records",
+		Value: toFloat(value),
 	})
 }
 
-// Additional metric with same app and name
+// Save records count
+func Values() []rec {
+	return q.values
+}
+
+// Additional metric with same app and Name
 func (m *Metric) SubMetric(key string, value interface{}) {
 	if !m.stated {
 		return
 	}
 	put(rec{
-		name:  m.name + "_" + key,
-		value: toFloat(value),
+		Name:  m.name + "_" + key,
+		Value: toFloat(value),
 	})
 }
 
