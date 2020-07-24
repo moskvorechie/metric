@@ -3,6 +3,7 @@ package metric
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -93,7 +94,6 @@ func Init(pp Params) {
 				for _, r := range q.values {
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
 				}
-				s = strings.TrimSpace(s)
 				if len(s) <= 0 {
 					return
 				}
@@ -189,7 +189,7 @@ func send(data []byte) error {
 		uri = fmt.Sprintf("%s/metrics/job/%s/instance/%s", p.Url, p.App, p.Instance)
 	}
 	if p.Debug {
-		fmt.Println(uri, string(data))
+		fmt.Println(uri, strings.TrimSpace(string(data)))
 	}
 
 	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(data))
@@ -204,7 +204,11 @@ func send(data []byte) error {
 	}
 	defer resp.Body.Close()
 	if p.Debug {
-		fmt.Println(resp.StatusCode)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		fmt.Println("code:", resp.StatusCode, "body:", string(body))
 	}
 	return nil
 }
