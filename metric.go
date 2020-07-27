@@ -30,9 +30,19 @@ type Params struct {
 	isInit    bool
 }
 
+type RecType string
+
+const (
+	RecTypeHistogram = "histogram"
+	RecTypeCounter   = "counter"
+	RecTypeGauge     = "gauge"
+	RecTypeSummary   = "summary"
+)
+
 type rec struct {
 	Name  string
 	Value float64
+	Type  string
 }
 
 type queue struct {
@@ -92,6 +102,7 @@ func Init(pp Params) {
 				}
 				var s string
 				for _, r := range q.values {
+					s += fmt.Sprintf("# TYPE %s_%s %s\n", p.App, r.Name, r.Type)
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
 				}
 				if len(s) <= 0 {
@@ -130,6 +141,7 @@ func (m *Metric) Stop() {
 	put(rec{
 		Name:  m.name + "_seconds",
 		Value: m.timeDur.Seconds(),
+		Type:  RecTypeHistogram,
 	})
 }
 
@@ -141,6 +153,7 @@ func (m *Metric) Records(value interface{}) {
 	put(rec{
 		Name:  m.name + "_records",
 		Value: toFloat(value),
+		Type:  RecTypeHistogram,
 	})
 }
 
@@ -157,6 +170,27 @@ func (m *Metric) SubMetric(key string, value interface{}) {
 	put(rec{
 		Name:  m.name + "_" + key,
 		Value: toFloat(value),
+		Type:  RecTypeHistogram,
+	})
+}
+
+// Additional metric with same app and Name
+func (m *Metric) Custom(key string, value interface{}, sType string) {
+	if !m.stated {
+		return
+	}
+	switch sType {
+	case RecTypeHistogram:
+	case RecTypeGauge:
+	case RecTypeSummary:
+	case RecTypeCounter:
+	default:
+		panic("no type found")
+	}
+	put(rec{
+		Name:  m.name + "_" + key,
+		Value: toFloat(value),
+		Type:  sType,
 	})
 }
 
