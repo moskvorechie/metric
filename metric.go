@@ -103,23 +103,15 @@ func Init(pp Params) {
 				if p.Debug && len(q.values) > p.BufferWrn {
 					log.Printf("cnt message in Metric stack is too big %d", len(q.values))
 				}
-				t := make(map[string]bool, 0)
 				var s string
 				for _, r := range q.values {
-					// Set type one time
-					if b, ok := t[fmt.Sprintf("%s_%s", p.App, r.Name)]; !ok || b == false {
-						s += fmt.Sprintf("# TYPE %s_%s %s\n", p.App, r.Name, r.Type)
-						t[fmt.Sprintf("%s_%s", p.App, r.Name)] = true
-					}
 					// Set value
+					s += fmt.Sprintf("# TYPE %s_%s %s\n", p.App, r.Name, r.Type)
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
-				}
-				if len(s) <= 0 {
-					return
-				}
-				err = sendStr(s)
-				if err != nil {
-					panic(err)
+					err = sendStr(s)
+					if err != nil {
+						panic(err)
+					}
 				}
 				q.values = nil
 			}()
