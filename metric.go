@@ -20,14 +20,15 @@ type Metric struct {
 }
 
 type Params struct {
-	Sleep     int
-	BufferWrn int
-	Url       string
-	App       string
-	Instance  string
-	Test      bool
-	Debug     bool
-	isInit    bool
+	Sleep      int
+	BufferWrn  int
+	Url        string
+	App        string
+	Instance   string
+	Test       bool
+	Debug      bool
+	HttpClient *http.Client
+	isInit     bool
 }
 
 type RecType string
@@ -86,6 +87,8 @@ func Init(pp Params) {
 		values: make([]rec, 0),
 	}
 
+	p.HttpClient = &http.Client{}
+
 	// Send queue
 	go func() {
 		var err error
@@ -108,7 +111,7 @@ func Init(pp Params) {
 				if len(s) <= 0 {
 					return
 				}
-				err = sendMany(s)
+				err = sendStr(s)
 				if err != nil {
 					panic(err)
 				}
@@ -200,13 +203,8 @@ func put(r rec) {
 	q.values = append(q.values, r)
 }
 
-func sendMany(plain string) error {
+func sendStr(plain string) error {
 	data := []byte(plain)
-	return send(data)
-}
-
-func sendOne(key string, value float64) error {
-	data := []byte(fmt.Sprintf("%s %f\n", key, value))
 	return send(data)
 }
 
@@ -231,8 +229,7 @@ func send(data []byte) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "text/plain")
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := p.HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
