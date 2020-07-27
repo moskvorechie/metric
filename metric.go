@@ -150,7 +150,7 @@ func (m *Metric) Stop() {
 	put(rec{
 		Name:  m.name + "_seconds",
 		Value: m.timeDur.Seconds(),
-		Type:  RecTypeHistogram,
+		Type:  RecTypeGauge,
 	})
 }
 
@@ -162,7 +162,7 @@ func (m *Metric) Records(value interface{}) {
 	put(rec{
 		Name:  m.name + "_records",
 		Value: toFloat(value),
-		Type:  RecTypeHistogram,
+		Type:  RecTypeGauge,
 	})
 }
 
@@ -179,7 +179,7 @@ func (m *Metric) SubMetric(key string, value interface{}) {
 	put(rec{
 		Name:  m.name + "_" + key,
 		Value: toFloat(value),
-		Type:  RecTypeHistogram,
+		Type:  RecTypeGauge,
 	})
 }
 
