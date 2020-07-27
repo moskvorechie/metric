@@ -103,10 +103,9 @@ func Init(pp Params) {
 				if p.Debug && len(q.values) > p.BufferWrn {
 					log.Printf("cnt message in Metric stack is too big %d", len(q.values))
 				}
-				var s string
 				for _, r := range q.values {
 					// Set value
-					s += fmt.Sprintf("# TYPE %s_%s %s\n", p.App, r.Name, r.Type)
+					s := fmt.Sprintf("# TYPE %s_%s %s\n", p.App, r.Name, r.Type)
 					s += fmt.Sprintf("%s_%s %f\n", p.App, r.Name, r.Value)
 					err = sendStr(s)
 					if err != nil {
